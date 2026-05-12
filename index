@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baloncesto Infantil - Físicas Pro</title>
+    <style>
+        :root { --primary: #ff6600; --wood: #5d4037; }
+        body { 
+            margin: 0; background: #1a1a1a; font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+        }
+        #game-container { position: relative; border: 6px solid #333; border-radius: 15px; overflow: hidden; background: #87CEEB; }
+        canvas { display: block; cursor: crosshair; }
+        
+        .ui-panel {
+            width: 100%; height: 130px; background: var(--wood);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 5px solid #3e2723; padding: 10px; box-sizing: border-box;
+        }
+        .control-group { text-align: center; color: white; }
+        #power-container { width: 200px; height: 30px; background: #222; border-radius: 8px; border: 2px solid #ffd700; overflow: hidden; }
+        #power-bar { height: 100%; width: 0%; background: linear-gradient(to right, #4caf50, #ffeb3b, #f44336); }
+        
+        #shoot-btn {
+            width: 80px; height: 80px; border-radius: 50%; border: none;
+            background: radial-gradient(#ff5252, #b71c1c); color: white;
+            font-weight: bold; font-size: 16px; cursor: pointer;
+            box-shadow: 0 5px #6b1111;
+        }
+        #shoot-btn:active { transform: translateY(3px); box-shadow: 0 2px #6b1111; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="850" height="450"></canvas>
+        <div class="ui-panel">
+            <div class="control-group">
+                <label>ÁNGULO</label><br>
+                <input type="range" id="angleSlider" min="15" max="85" value="55">
+            </div>
+            <div class="control-group">
+                <label>POTENCIA</label>
+                <div id="power-container"><div id="power-bar"></div></div>
+            </div>
+            <button id="shoot-btn">¡TIRO!</button>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const powerBar = document.getElementById('power-bar');
+    const angleSlider = document.getElementById('angleSlider');
+    const shootBtn = document.getElementById('shoot-btn');
+
+    let score = 0;
+    let power = 0;
+    let powerDir = 1.8; 
+    let ball = { x: 100, y: 340, r: 18, vx: 0, vy: 0, active: false };
+
+    // Configuración de la canasta
+    const backboard = { x: 780, y: 80, w: 12, h: 130 };
+    const rim = { x1: 710, x2: 780, y: 190 }; // El aro va del borde al tablero
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // --- ESCENARIO ---
+        ctx.fillStyle = "#d2b48c"; // Suelo
+        ctx.fillRect(0, 380, canvas.width, 70);
+
+        // --- CANASTA ---
+        // Poste
+        ctx.fillStyle = "#333";
+        ctx.fillRect(795, 210, 8, 170);
+        
+        // Tablero
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 4;
+        ctx.fillRect(backboard.x, backboard.y, backboard.w, backboard.h);
+        ctx.strokeRect(backboard.x, backboard.y, backboard.w, backboard.h);
+
+        // Aro (Rojo)
+        ctx.strokeStyle = "#e91e63";
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(rim.x1, rim.y);
+        ctx.lineTo(rim.x2, rim.y);
+        ctx.stroke();
+
+        // --- BALÓN ---
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+        let grad = ctx.createRadialGradient(ball.x-5, ball.y-5, 2, ball.x, ball.y, ball.r);
+        grad.addColorStop(0, '#ff9d6c'); grad.addColorStop(1, '#bf360c');
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.stroke();
+
+        // --- BRAZO GUÍA ---
+        if(!ball.active) {
+            let ang = -angleSlider.value * Math.PI / 180;
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath(); ctx.moveTo(ball.x, ball.y);
+            ctx.lineTo(ball.x + Math.cos(ang)*80, ball.y + Math.sin(ang)*80);
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = "black";
+        ctx.font = "bold 25px Arial";
+        ctx.fillText("CANASTAS: " + score, 30, 40);
+
+        update();
+        requestAnimationFrame(draw);
+    }
+
+    function update() {
+        if (!ball.active) {
+            power += powerDir;
+            if (power > 100 || power < 0) powerDir *= -1;
+            powerBar.style.width = power + "%";
+        } else {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.vy += 0.35; // Gravedad
+
+            // --- LÓGICA DE REBOTE EN TABLERO ---
+            // Si golpea el frente del tablero
+            if (ball.x + ball.r > backboard.x && 
+                ball.x - ball.r < backboard.x + backboard.w &&
+                ball.y > backboard.y && ball.y < backboard.y + backboard.h) {
+                
+                ball.vx *= -0.5; // Rebote con pérdida de fuerza
+                ball.x = backboard.x - ball.r; // Reposicionar fuera del tablero
+            }
+
+            // --- DETECCIÓN DE CANASTA ---
+            // Si el balón pasa por el aro hacia abajo
+            if (ball.vy > 0 && ball.x > rim.x1 && ball.x < rim.x2 && 
+                ball.y > rim.y - 10 && ball.y < rim.y + 10) {
+                score++;
+                resetBall();
+            }
+
+            // Reset si se sale
+            if (ball.y > 500 || ball.x > 900 || ball.x < 0) resetBall();
+        }
+    }
+
+    function resetBall() {
+        ball.active = false;
+        ball.x = 100; ball.y = 340;
+        ball.vx = 0; ball.vy = 0;
+    }
+
+    shootBtn.onclick = () => {
+        if (ball.active) return;
+        let a = -angleSlider.value * Math.PI / 180;
+        let v = 6 + (power / 6.5); 
+        ball.vx = Math.cos(a) * v;
+        ball.vy = Math.sin(a) * v;
+        ball.active = true;
+    };
+
+    draw();
+</script>
+</body>
+</html>

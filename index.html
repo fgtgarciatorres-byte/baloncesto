@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Arcade Basket Challenge</title>
+    <title>Arcade Basket - Final</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         body { 
-            margin: 0; background: #222; display: flex; flex-direction: column; 
+            margin: 0; background: #000; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; height: 100vh;
             font-family: 'Press Start 2P', cursive; overflow: hidden; color: #fff;
         }
@@ -15,13 +15,10 @@
         #game-container {
             position: relative; width: 900px; height: 500px; 
             border: 6px solid #333; border-radius: 15px; overflow: hidden;
-        }
-
-        /* Usamos tus archivos locales de GitHub directamente */
-        #background-layer {
-            position: absolute; width: 100%; height: 100%;
-            background-image: url('fondo_basket.png');
+            /* IMPORTANTE: Nombre exacto de tu archivo en GitHub */
+            background-image: url('fondo_basket.png'); 
             background-size: cover;
+            background-position: center;
         }
 
         canvas { position: absolute; top: 0; left: 0; background: transparent; z-index: 2; }
@@ -38,7 +35,6 @@
         }
         .stat { background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #FFD700; font-size: 10px; }
 
-        /* Panel Inferior Estilo Imagen Referencia */
         .dashboard {
             width: 912px; height: 130px;
             background: linear-gradient(to bottom, #5d4037, #2c1b18);
@@ -59,19 +55,16 @@
             color: white; font-size: 14px; font-weight: bold; cursor: pointer;
             box-shadow: 0 6px #4a0000; font-family: 'Press Start 2P';
         }
-        #shoot-btn:active { transform: translateY(3px); box-shadow: 0 2px #4a0000; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <div id="background-layer"></div>
-        
         <div id="start-screen" class="screen">
             <h1 style="color:#FFD700">ARCADE BASKET</h1>
             <p>INICIALES:</p>
             <input type="text" id="player-initials" value="AAA" maxlength="3" 
-                   style="background:#000; color:#0f0; font-family:'Press Start 2P'; font-size:20px; text-align:center; border:2px solid #0f0; padding:5px; width:120px;">
+                   style="background:#000; color:#0f0; font-family:'Press Start 2P'; font-size:20px; text-align:center; border:2px solid #0f0; width:120px;">
             <br>
             <button id="start-btn" style="padding:15px; cursor:pointer; font-family:'Press Start 2P';">INSERT COIN</button>
         </div>
@@ -104,7 +97,24 @@
     </div>
 
 <script>
-    // --- AUDIO ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- IMÁGENES ---
+    // Usamos el nombre exacto que tienes en tu GitHub
+    const playerImg = new Image();
+    playerImg.src = 'player.jpg'; 
+
+    let state = 'START';
+    let score = 0;
+    let startTime, gameTime = 0;
+    let power = 0, powerDir = 2.5;
+    let ball = { x: 180, y: 350, r: 16, vx: 0, vy: 0, active: false };
+    
+    const backboard = { x: 745, y: 110, w: 12, h: 145 };
+    const rim = { x1: 675, x2: 745, y: 228 };
+
+    // --- SONIDO ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(f1, f2, dur) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -118,22 +128,6 @@
         osc.start(); osc.stop(audioCtx.currentTime + dur);
     }
 
-    // --- CONFIG ---
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let state = 'START';
-    let score = 0;
-    let startTime, gameTime = 0;
-    let power = 0, powerDir = 2.5;
-    let ball = { x: 160, y: 380, r: 16, vx: 0, vy: 0, active: false };
-    
-    // Coordenadas ajustadas a la imagen de fondo
-    const backboard = { x: 745, y: 110, w: 12, h: 145 };
-    const rim = { x1: 675, x2: 745, y: 228 };
-
-    const playerImg = new Image();
-    playerImg.src = 'player.jpg'; 
-
     document.getElementById('start-btn').onclick = () => {
         state = 'PLAYING';
         startTime = Date.now();
@@ -145,10 +139,14 @@
     function loop() {
         if(state !== 'PLAYING') return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         gameTime = ((Date.now() - startTime) / 1000).toFixed(1);
         document.getElementById('hud-timer').innerText = gameTime;
 
-        if (playerImg.complete) ctx.drawImage(playerImg, 50, 240, 160, 220);
+        // DIBUJAR JUGADORA (Asegúrate de que el archivo se llame player.jpg)
+        if (playerImg.complete) {
+            ctx.drawImage(playerImg, 50, 240, 160, 220);
+        }
 
         if(!ball.active) {
             power += powerDir;
@@ -163,6 +161,7 @@
             ctx.stroke(); ctx.setLineDash([]);
         } else {
             ball.x += ball.vx; ball.y += ball.vy; ball.vy += 0.35;
+
             if(ball.x + ball.r > backboard.x && ball.x - ball.r < backboard.x + backboard.w &&
                ball.y > backboard.y && ball.y < backboard.y + backboard.h) {
                 ball.vx *= -0.5; ball.x = backboard.x - ball.r;
@@ -183,12 +182,12 @@
         requestAnimationFrame(loop);
     }
 
-    function resetBall() { ball.active = false; ball.x = 160; ball.y = 380; }
+    function resetBall() { ball.active = false; ball.x = 180; ball.y = 350; }
 
     function win() {
         state = 'END';
         document.getElementById('end-screen').style.display = 'flex';
-        document.getElementById('final-stats').innerText = "TIEMPO FINAL: " + gameTime + "s";
+        document.getElementById('final-stats').innerText = "TIEMPO: " + gameTime + "s";
         let initials = document.getElementById('player-initials').value.toUpperCase();
         let ranking = JSON.parse(localStorage.getItem('b-rank') || '[]');
         ranking.push({n: initials, t: parseFloat(gameTime)});

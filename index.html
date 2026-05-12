@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Arcade Basket - Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Basket - Edición Final</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -12,39 +13,52 @@
             font-family: 'Press Start 2P', cursive; overflow: hidden; color: #fff;
         }
 
-        #game-container {
+        #game-viewport { 
             position: relative; width: 900px; height: 500px; 
-            border: 6px solid #333; border-radius: 15px; overflow: hidden;
-            /* IMPORTANTE: Nombre exacto de tu archivo en GitHub */
+            /* Se asume el archivo fondo_basket.png en la raíz de tu GitHub */
             background-image: url('fondo_basket.png'); 
             background-size: cover;
             background-position: center;
+            border: 6px solid #333; border-radius: 15px;
+            overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9);
         }
 
         canvas { position: absolute; top: 0; left: 0; background: transparent; z-index: 2; }
 
+        /* Pantallas de Inicio y Fin */
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: rgba(0,0,0,0.85); z-index: 10; text-align: center;
         }
 
-        .hud {
-            position: absolute; top: 15px; width: 100%; display: flex; 
-            justify-content: space-around; pointer-events: none; z-index: 5;
+        h1 { font-size: 28px; color: #FFD700; text-shadow: 3px 3px #ff00ff; margin-bottom: 30px; }
+        
+        /* Ajuste del cuadro de texto para las iniciales */
+        #player-initials {
+            background: #111; border: 4px solid #00ffff; color: #00ffff;
+            font-family: 'Press Start 2P'; font-size: 24px; text-align: center;
+            width: 180px; padding: 15px; text-transform: uppercase; margin: 20px;
+            outline: none; pointer-events: auto; /* Asegura que se pueda clicar */
         }
-        .stat { background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #FFD700; font-size: 10px; }
 
+        .hud {
+            position: absolute; top: 15px; width: 100%; display: none; 
+            justify-content: space-around; z-index: 5; pointer-events: none;
+        }
+        .stat-box { background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #FFD700; font-size: 10px; }
+
+        /* Panel de mandos inferior */
         .dashboard {
-            width: 912px; height: 130px;
+            width: 912px; height: 125px;
             background: linear-gradient(to bottom, #5d4037, #2c1b18);
             border-radius: 0 0 20px 20px;
             display: flex; justify-content: space-around; align-items: center;
             border: 4px solid #3e2723;
         }
 
-        .power-container {
-            width: 250px; height: 35px; background: #111;
+        .power-meter {
+            width: 240px; height: 35px; background: #000;
             border: 3px solid #FFD700; border-radius: 8px; overflow: hidden;
         }
         #power-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #0f0, #ff0, #f00); }
@@ -55,30 +69,29 @@
             color: white; font-size: 14px; font-weight: bold; cursor: pointer;
             box-shadow: 0 6px #4a0000; font-family: 'Press Start 2P';
         }
+        #shoot-btn:active { transform: translateY(4px); box-shadow: 0 2px #4a0000; }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
+    <div id="game-viewport">
         <div id="start-screen" class="screen">
-            <h1 style="color:#FFD700">ARCADE BASKET</h1>
-            <p>INICIALES:</p>
-            <input type="text" id="player-initials" value="AAA" maxlength="3" 
-                   style="background:#000; color:#0f0; font-family:'Press Start 2P'; font-size:20px; text-align:center; border:2px solid #0f0; width:120px;">
-            <br>
-            <button id="start-btn" style="padding:15px; cursor:pointer; font-family:'Press Start 2P';">INSERT COIN</button>
-        </div>
-
-        <div id="game-hud" class="hud" style="display:none;">
-            <div class="stat">PUNTOS: <span id="hud-score">0</span>/10</div>
-            <div class="stat">TIEMPO: <span id="hud-timer">0.0</span>s</div>
+            <h1>URBAN BASKET</h1>
+            <p style="font-size: 12px;">INTRODUCE TUS INICIALES</p>
+            <input type="text" id="player-initials" maxlength="3" value="AAA" autofocus>
+            <button id="start-btn" style="padding:15px 30px; cursor:pointer; font-family:'Press Start 2P'; background:#0f0; border:none; border-radius:10px;">¡START!</button>
         </div>
 
         <div id="end-screen" class="screen" style="display:none;">
-            <h1 id="end-title">FIN DEL JUEGO</h1>
-            <p id="final-stats"></p>
+            <h1 id="end-status">GAME OVER</h1>
+            <p id="final-stats" style="color:#0f0;"></p>
             <div id="ranking-list" style="font-size:10px; text-align:left; line-height:2"></div>
-            <button onclick="location.reload()" style="margin-top:20px; font-family:'Press Start 2P';">VOLVER</button>
+            <button onclick="location.reload()" style="margin-top:20px; font-family:'Press Start 2P'; padding:10px;">REINTENTAR</button>
+        </div>
+
+        <div id="game-hud" class="hud">
+            <div class="stat-box">CANASTAS: <span id="hud-score">0</span>/10</div>
+            <div class="stat-box">TIEMPO: <span id="hud-timer">0.0</span>s</div>
         </div>
 
         <canvas id="gameCanvas" width="900" height="500"></canvas>
@@ -86,47 +99,42 @@
 
     <div class="dashboard">
         <div style="text-align:center">
-            <label style="font-size:10px">ÁNGULO</label><br>
-            <input type="range" id="angleSlider" min="15" max="85" value="50">
+            <span style="font-size:9px;">ÁNGULO</span><br>
+            <input type="range" id="angleSlider" min="20" max="85" value="55">
         </div>
         <div style="text-align:center">
-            <label style="font-size:10px">POTENCIA</label>
-            <div class="power-container"><div id="power-bar"></div></div>
+            <span style="font-size:9px;">POTENCIA</span>
+            <div class="power-meter"><div id="power-bar"></div></div>
         </div>
-        <button id="shoot-btn">TIRAR!</button>
+        <button id="shoot-btn">SHOT</button>
     </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // --- IMÁGENES ---
-    // Usamos el nombre exacto que tienes en tu GitHub
-    const playerImg = new Image();
-    playerImg.src = 'player.jpg'; 
-
-    let state = 'START';
-    let score = 0;
-    let startTime, gameTime = 0;
-    let power = 0, powerDir = 2.5;
-    let ball = { x: 180, y: 350, r: 16, vx: 0, vy: 0, active: false };
-    
-    const backboard = { x: 745, y: 110, w: 12, h: 145 };
-    const rim = { x1: 675, x2: 745, y: 228 };
-
-    // --- SONIDO ---
+    // --- SISTEMA DE AUDIO ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playSound(f1, f2, dur) {
+    function playSound(fStart, fEnd, duration) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(f1, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + dur);
+        osc.frequency.setValueAtTime(fStart, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(fEnd, audioCtx.currentTime + duration);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
-        osc.start(); osc.stop(audioCtx.currentTime + dur);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
+
+    // --- LÓGICA Y FÍSICAS ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let state = 'START';
+    let score = 0, startTime, gameTime = 0;
+    let power = 0, powerDir = 2.3;
+    let ball = { x: 175, y: 360, r: 16, vx: 0, vy: 0, active: false };
+
+    // Coordenadas físicas de la canasta (Ajustadas a la imagen urbana)
+    const backboard = { x: 745, y: 110, w: 12, h: 145 };
+    const rim = { x1: 675, x2: 745, y: 228 };
 
     document.getElementById('start-btn').onclick = () => {
         state = 'PLAYING';
@@ -143,67 +151,78 @@
         gameTime = ((Date.now() - startTime) / 1000).toFixed(1);
         document.getElementById('hud-timer').innerText = gameTime;
 
-        // DIBUJAR JUGADORA (Asegúrate de que el archivo se llame player.jpg)
-        if (playerImg.complete) {
-            ctx.drawImage(playerImg, 50, 240, 160, 220);
-        }
-
         if(!ball.active) {
+            // Actualizar potencia
             power += powerDir;
             if(power > 100 || power < 0) powerDir *= -1;
             document.getElementById('power-bar').style.width = power + '%';
             
+            // Guía visual
             let ang = -document.getElementById('angleSlider').value * Math.PI / 180;
             ctx.strokeStyle = "rgba(255,255,255,0.4)";
-            ctx.setLineDash([5, 5]);
+            ctx.setLineDash([5, 8]);
             ctx.beginPath(); ctx.moveTo(ball.x, ball.y);
             ctx.lineTo(ball.x + Math.cos(ang)*60, ball.y + Math.sin(ang)*60);
             ctx.stroke(); ctx.setLineDash([]);
         } else {
+            // Gravedad y Movimiento
             ball.x += ball.vx; ball.y += ball.vy; ball.vy += 0.35;
 
+            // Rebote en tablero
             if(ball.x + ball.r > backboard.x && ball.x - ball.r < backboard.x + backboard.w &&
                ball.y > backboard.y && ball.y < backboard.y + backboard.h) {
                 ball.vx *= -0.5; ball.x = backboard.x - ball.r;
-                playSound(150, 100, 0.1);
+                playSound(150, 80, 0.1);
             }
+
+            // Canasta
             if(ball.vy > 0 && ball.x > rim.x1 && ball.x < rim.x2 && Math.abs(ball.y - rim.y) < 12) {
                 score++;
-                playSound(600, 1000, 0.3);
+                playSound(600, 1200, 0.3);
                 document.getElementById('hud-score').innerText = score;
                 resetBall();
                 if(score >= 10) win();
             }
+
             if(ball.y > 550 || ball.x > 950 || ball.x < -50) resetBall();
         }
 
-        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
-        ctx.fillStyle = '#ff6600'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.stroke();
+        // Dibujar Balón
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+        let grad = ctx.createRadialGradient(ball.x-5, ball.y-5, 2, ball.x, ball.y, ball.r);
+        grad.addColorStop(0, '#ff9d6c'); grad.addColorStop(1, '#bf360c');
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.strokeStyle = "#000"; ctx.stroke();
+
         requestAnimationFrame(loop);
     }
 
-    function resetBall() { ball.active = false; ball.x = 180; ball.y = 350; }
+    function resetBall() { ball.active = false; ball.x = 175; ball.y = 360; }
 
     function win() {
         state = 'END';
         document.getElementById('end-screen').style.display = 'flex';
         document.getElementById('final-stats').innerText = "TIEMPO: " + gameTime + "s";
+        
         let initials = document.getElementById('player-initials').value.toUpperCase();
-        let ranking = JSON.parse(localStorage.getItem('b-rank') || '[]');
-        ranking.push({n: initials, t: parseFloat(gameTime)});
-        ranking.sort((a,b) => a.t - b.t);
-        ranking = ranking.slice(0, 10);
-        localStorage.setItem('b-rank', JSON.stringify(ranking));
-        document.getElementById('ranking-list').innerHTML = "TOP 10:<br>" + 
-            ranking.map((r, i) => `${i+1}. ${r.n} - ${r.t}s`).join('<br>');
+        let scores = JSON.parse(localStorage.getItem('arcade_basket_scores') || '[]');
+        scores.push({ n: initials, t: parseFloat(gameTime) });
+        scores.sort((a,b) => a.t - b.t);
+        scores = scores.slice(0, 10);
+        localStorage.setItem('arcade_basket_scores', JSON.stringify(scores));
+
+        document.getElementById('ranking-list').innerHTML = "RANKING TOP 10:<br>" + 
+            scores.map((s, i) => `${i+1}. ${s.n} - ${s.t}s`).join('<br>');
     }
 
     document.getElementById('shoot-btn').onclick = () => {
         if(state !== 'PLAYING' || ball.active) return;
-        playSound(200, 400, 0.1);
+        playSound(200, 450, 0.1);
         let a = -document.getElementById('angleSlider').value * Math.PI / 180;
         let v = 6.5 + (power / 6);
-        ball.vx = Math.cos(a) * v; ball.vy = Math.sin(a) * v; ball.active = true;
+        ball.vx = Math.cos(a) * v; ball.vy = Math.sin(a) * v;
+        ball.active = true;
     };
 </script>
 </body>

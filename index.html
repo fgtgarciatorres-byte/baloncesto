@@ -2,228 +2,197 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Basket - Edición Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WaterWorld - Sistema Estable</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-        body { 
-            margin: 0; background: #000; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; height: 100vh;
-            font-family: 'Press Start 2P', cursive; overflow: hidden; color: #fff;
-        }
-
-        #game-viewport { 
-            position: relative; width: 900px; height: 500px; 
-            /* Se asume el archivo fondo_basket.png en la raíz de tu GitHub */
-            background-image: url('fondo_basket.png'); 
-            background-size: cover;
-            background-position: center;
-            border: 6px solid #333; border-radius: 15px;
-            overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9);
-        }
-
-        canvas { position: absolute; top: 0; left: 0; background: transparent; z-index: 2; }
-
-        /* Pantallas de Inicio y Fin */
-        .screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        body { margin: 0; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; }
+        #ui-portal {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle, #001 0%, #000 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.85); z-index: 10; text-align: center;
+            z-index: 2000; color: #0ff; text-align: center;
         }
-
-        h1 { font-size: 28px; color: #FFD700; text-shadow: 3px 3px #ff00ff; margin-bottom: 30px; }
-        
-        /* Ajuste del cuadro de texto para las iniciales */
-        #player-initials {
-            background: #111; border: 4px solid #00ffff; color: #00ffff;
-            font-family: 'Press Start 2P'; font-size: 24px; text-align: center;
-            width: 180px; padding: 15px; text-transform: uppercase; margin: 20px;
-            outline: none; pointer-events: auto; /* Asegura que se pueda clicar */
-        }
-
-        .hud {
-            position: absolute; top: 15px; width: 100%; display: none; 
-            justify-content: space-around; z-index: 5; pointer-events: none;
-        }
-        .stat-box { background: rgba(0,0,0,0.8); padding: 10px; border: 2px solid #FFD700; font-size: 10px; }
-
-        /* Panel de mandos inferior */
-        .dashboard {
-            width: 912px; height: 125px;
-            background: linear-gradient(to bottom, #5d4037, #2c1b18);
-            border-radius: 0 0 20px 20px;
-            display: flex; justify-content: space-around; align-items: center;
-            border: 4px solid #3e2723;
-        }
-
-        .power-meter {
-            width: 240px; height: 35px; background: #000;
-            border: 3px solid #FFD700; border-radius: 8px; overflow: hidden;
-        }
-        #power-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #0f0, #ff0, #f00); }
-
-        #shoot-btn {
-            width: 90px; height: 90px; border-radius: 50%; border: none;
-            background: radial-gradient(circle at 30%, #ff4444, #8b0000);
-            color: white; font-size: 14px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 6px #4a0000; font-family: 'Press Start 2P';
-        }
-        #shoot-btn:active { transform: translateY(4px); box-shadow: 0 2px #4a0000; }
+        input.input-id { background: #000; border: 2px solid #0ff; color: #0ff; padding: 10px; margin: 10px; font-size: 20px; text-align: center; box-shadow: 0 0 10px #0ff; border-radius: 5px; outline: none; }
+        .btn-neon { padding: 15px 30px; margin: 10px; font-size: 18px; color: #f0f; border: 2px solid #f0f; background: transparent; cursor: pointer; box-shadow: 0 0 15px #f0f; border-radius: 5px; font-weight: bold; width: 280px; }
     </style>
 </head>
 <body>
 
-    <div id="game-viewport">
-        <div id="start-screen" class="screen">
-            <h1>URBAN BASKET</h1>
-            <p style="font-size: 12px;">INTRODUCE TUS INICIALES</p>
-            <input type="text" id="player-initials" maxlength="3" value="AAA" autofocus>
-            <button id="start-btn" style="padding:15px 30px; cursor:pointer; font-family:'Press Start 2P'; background:#0f0; border:none; border-radius:10px;">¡START!</button>
+    <div id="ui-portal">
+        <h1 style="font-size: 50px; text-shadow: 0 0 20px #0ff;">WATERWORLD</h1>
+        
+        <input type="text" id="p-name" class="input-id" placeholder="I.D. (3 letras)" maxlength="3">
+        
+        <div style="margin-bottom: 20px;">
+            <button onclick="setSex('h')" id="bh" style="background:#05f; color:white; padding:10px; border:none; cursor:pointer; border-radius: 5px;">♂ HOMBRE</button>
+            <button onclick="setSex('m')" id="bm" style="background:#333; color:white; padding:10px; border:none; cursor:pointer; border-radius: 5px;">♀ MUJER</button>
         </div>
-
-        <div id="end-screen" class="screen" style="display:none;">
-            <h1 id="end-status">GAME OVER</h1>
-            <p id="final-stats" style="color:#0f0;"></p>
-            <div id="ranking-list" style="font-size:10px; text-align:left; line-height:2"></div>
-            <button onclick="location.reload()" style="margin-top:20px; font-family:'Press Start 2P'; padding:10px;">REINTENTAR</button>
-        </div>
-
-        <div id="game-hud" class="hud">
-            <div class="stat-box">CANASTAS: <span id="hud-score">0</span>/10</div>
-            <div class="stat-box">TIEMPO: <span id="hud-timer">0.0</span>s</div>
-        </div>
-
-        <canvas id="gameCanvas" width="900" height="500"></canvas>
+        
+        <button class="btn-neon" onclick="lanzar('Nivel1')">OFICINA (Nivel 1)</button>
+        <button class="btn-neon" onclick="lanzar('Nivel3')" style="color:#0ff; border-color:#0ff; box-shadow: 0 0 15px #0ff;">PLAZA (Nivel 3)</button>
     </div>
 
-    <div class="dashboard">
-        <div style="text-align:center">
-            <span style="font-size:9px;">ÁNGULO</span><br>
-            <input type="range" id="angleSlider" min="20" max="85" value="55">
-        </div>
-        <div style="text-align:center">
-            <span style="font-size:9px;">POTENCIA</span>
-            <div class="power-meter"><div id="power-bar"></div></div>
-        </div>
-        <button id="shoot-btn">SHOT</button>
-    </div>
+    <div id="game-container"></div>
 
 <script>
-    // --- SISTEMA DE AUDIO ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playSound(fStart, fEnd, duration) {
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(fStart, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(fEnd, audioCtx.currentTime + duration);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
-    }
+let globalData = { sex: 'h', name: 'ABC' };
 
-    // --- LÓGICA Y FÍSICAS ---
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let state = 'START';
-    let score = 0, startTime, gameTime = 0;
-    let power = 0, powerDir = 0.6;
-    let ball = { x: 175, y: 360, r: 16, vx: 0, vy: 0, active: false };
+function setSex(s) {
+    globalData.sex = s;
+    document.getElementById('bh').style.background = s === 'h' ? '#05f' : '#333';
+    document.getElementById('bm').style.background = s === 'm' ? '#ff00ff' : '#333';
+}
 
-    // Coordenadas físicas de la canasta (Ajustadas a la imagen urbana)
-    const backboard = { x: 745, y: 110, w: 12, h: 145 };
-    const rim = { x1: 675, x2: 745, y: 228 };
+function lanzar(escena) {
+    let n = document.getElementById('p-name').value;
+    if(n) globalData.name = n.toUpperCase();
+    document.getElementById('ui-portal').style.display = 'none';
+    initPhaser(escena);
+}
 
-    document.getElementById('start-btn').onclick = () => {
-        state = 'PLAYING';
-        startTime = Date.now();
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-hud').style.display = 'flex';
-        loop();
+function initPhaser(escenaInicial) {
+    const config = {
+        type: Phaser.AUTO,
+        width: 800, height: 1200,
+        parent: 'game-container',
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+        physics: { default: 'arcade', arcade: { gravity: { y: 1200 }, debug: false } },
+        scene: [Boot, Nivel1, Nivel3]
     };
+    const game = new Phaser.Game(config);
+    game.events.once('ready', () => { 
+        game.scene.start(escenaInicial); 
+    });
+}
 
-    function loop() {
-        if(state !== 'PLAYING') return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+class Boot extends Phaser.Scene {
+    constructor() { super('Boot'); }
+    preload() {
+        // Assets Nivel 1 y 3 (Verificados nombres en tu GitHub)
+        this.load.image('f_oficina', 'fondo.png');
+        this.load.image('f_plaza', 'plaza.png');
+        // Usamos bunker.png o el fondo si falla
+        this.load.image('bunker_img', 'fondo.png'); 
+        this.load.image('boss', 'boss.png');
+        this.load.image('silla', 'silla.png');
+        this.load.image('cafe', 'cafe.png');
+        this.load.image('barril', 'barril.png');
         
-        gameTime = ((Date.now() - startTime) / 1000).toFixed(1);
-        document.getElementById('hud-timer').innerText = gameTime;
+        for(let i=1; i<=5; i++) { this.load.image(`e${i}`, `e${i}.png`); }
 
-        if(!ball.active) {
-            // Actualizar potencia
-            power += powerDir;
-            if(power > 100 || power < 0) powerDir *= -1;
-            document.getElementById('power-bar').style.width = power + '%';
-            
-            // Guía visual
-            let ang = -document.getElementById('angleSlider').value * Math.PI / 180;
-            ctx.strokeStyle = "rgba(255,255,255,0.4)";
-            ctx.setLineDash([5, 8]);
-            ctx.beginPath(); ctx.moveTo(ball.x, ball.y);
-            ctx.lineTo(ball.x + Math.cos(ang)*60, ball.y + Math.sin(ang)*60);
-            ctx.stroke(); ctx.setLineDash([]);
-        } else {
-            // Gravedad y Movimiento
-            ball.x += ball.vx; ball.y += ball.vy; ball.vy += 0.35;
+        const s = globalData.sex;
+        this.load.image('p_n', `personaje${s}.png`);
+        this.load.image('p_a', `personaje${s}a.png`);
+        this.load.image('p_m', `personaje${s}m.png`);
+    }
+}
 
-            // Rebote en tablero
-            if(ball.x + ball.r > backboard.x && ball.x - ball.r < backboard.x + backboard.w &&
-               ball.y > backboard.y && ball.y < backboard.y + backboard.h) {
-                ball.vx *= -0.5; ball.x = backboard.x - ball.r;
-                playSound(150, 80, 0.1);
-            }
-
-            // Canasta
-            if(ball.vy > 0 && ball.x > rim.x1 && ball.x < rim.x2 && Math.abs(ball.y - rim.y) < 12) {
-                score++;
-                playSound(600, 1200, 0.3);
-                document.getElementById('hud-score').innerText = score;
-                resetBall();
-                if(score >= 10) win();
-            }
-
-            if(ball.y > 550 || ball.x > 950 || ball.x < -50) resetBall();
+class Nivel1 extends Phaser.Scene {
+    constructor() { super('Nivel1'); }
+    create() {
+        this.add.image(400, 600, 'f_oficina').setDisplaySize(800, 1200);
+        
+        // Animación de muerte (boom)
+        if (!this.anims.exists('boom')) {
+            this.anims.create({
+                key: 'boom',
+                frames: [{key:'e1'},{key:'e2'},{key:'e3'},{key:'e4'},{key:'e5'}],
+                frameRate: 10, repeat: 0
+            });
         }
 
-        // Dibujar Balón
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
-        let grad = ctx.createRadialGradient(ball.x-5, ball.y-5, 2, ball.x, ball.y, ball.r);
-        grad.addColorStop(0, '#ff9d6c'); grad.addColorStop(1, '#bf360c');
-        ctx.fillStyle = grad; ctx.fill();
-        ctx.strokeStyle = "#000"; ctx.stroke();
+        this.player = this.add.container(400, 400);
+        this.sprite = this.add.sprite(0, 0, 'p_n').setScale(0.8);
+        this.txtID = this.add.text(0, -130, globalData.name, { fontSize: '26px', fill: '#0ff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.player.add([this.sprite, this.txtID]);
 
-        requestAnimationFrame(loop);
-    }
-
-    function resetBall() { ball.active = false; ball.x = 175; ball.y = 360; }
-
-    function win() {
-        state = 'END';
-        document.getElementById('end-screen').style.display = 'flex';
-        document.getElementById('final-stats').innerText = "TIEMPO: " + gameTime + "s";
+        // UI Recuperada (Vidas y Reloj)
+        this.vidas = 3;
+        this.txtVidas = this.add.text(30, 40, '❤️❤️❤️', { fontSize: '45px' });
         
-        let initials = document.getElementById('player-initials').value.toUpperCase();
-        let scores = JSON.parse(localStorage.getItem('arcade_basket_scores') || '[]');
-        scores.push({ n: initials, t: parseFloat(gameTime) });
-        scores.sort((a,b) => a.t - b.t);
-        scores = scores.slice(0, 10);
-        localStorage.setItem('arcade_basket_scores', JSON.stringify(scores));
+        this.horas = 8; this.minutos = 0;
+        this.txtReloj = this.add.text(540, 40, '08:00 AM', { 
+            fontSize: '48px', fill: '#f00', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 
+        });
 
-        document.getElementById('ranking-list').innerHTML = "RANKING TOP 10:<br>" + 
-            scores.map((s, i) => `${i+1}. ${s.n} - ${s.t}s`).join('<br>');
+        // Reloj
+        this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+            this.minutos += 30; if(this.minutos >= 60) { this.minutos = 0; this.horas++; }
+            this.txtReloj.setText(`${this.horas<10?'0':''}${this.horas}:${this.minutos==0?'00':this.minutos} PM`);
+            if(this.horas >= 15) this.morirNivel1("SALIDA");
+        }});
+
+        // Movimiento (Lo que ya funcionaba)
+        this.input.on('pointerdown', () => {
+            let targetY = (this.player.y < 600) ? 1080 : 400;
+            this.tweens.add({ targets: this.player, y: targetY, duration: 500 });
+        });
+
+        // Peligro Achís
+        this.time.addEvent({ delay: 6000, loop: true, callback: () => {
+            this.sprite.setTexture('p_a');
+            this.time.delayedCall(2000, () => {
+                if(this.player.y < 600) this.quitarVida();
+                else this.sprite.setTexture('p_n');
+            });
+        }});
     }
 
-    document.getElementById('shoot-btn').onclick = () => {
-        if(state !== 'PLAYING' || ball.active) return;
-        playSound(200, 450, 0.1);
-        let a = -document.getElementById('angleSlider').value * Math.PI / 180;
-        let v = 6.5 + (power / 6);
-        ball.vx = Math.cos(a) * v; ball.vy = Math.sin(a) * v;
-        ball.active = true;
-    };
+    quitarVida() {
+        this.vidas--;
+        let corazones = ''; for(let i=0; i<this.vidas; i++) corazones += '❤️';
+        this.txtVidas.setText(corazones);
+        if(this.vidas <= 0) this.morirNivel1("K.O.");
+        else this.sprite.setTexture('p_n');
+    }
+
+    morirNivel1(msg) {
+        if(this.yaMuerto) return; this.yaMuerto = true;
+        this.sprite.setTexture('p_m');
+        if(this.textures.exists('e1')) {
+            let exp = this.add.sprite(this.player.x, this.player.y, 'e1').setScale(3);
+            exp.play('boom');
+        }
+        this.time.delayedCall(2000, () => location.reload());
+    }
+}
+
+class Nivel3 extends Phaser.Scene {
+    constructor() { super('Nivel3'); }
+    create() {
+        const { width, height } = this.scale;
+        this.add.image(400, 600, 'f_plaza').setDisplaySize(800, 1200);
+        
+        this.player = this.physics.add.sprite(width/2, 1100, 'p_n').setScale(0.8);
+        this.player.body.setAllowGravity(false);
+        this.player.setCollideWorldBounds(true);
+
+        this.items = this.physics.add.group();
+        this.sillas = 0;
+        this.txtPedido = this.add.text(400, 80, 'OBJETIVO: 🪑 0/5', { fontSize: '40px', fill: '#f00' }).setOrigin(0.5);
+
+        // Lanzamiento parabólico
+        this.time.addEvent({ delay: 2000, loop: true, callback: () => {
+            let t = Phaser.Math.RND.pick(['silla', 'cafe', 'barril']);
+            let obj = this.items.create(150, 300, t);
+            obj.setScale(t === 'barril' ? 1 : 0.15); 
+            obj.setVelocity(Phaser.Math.Between(200, 500), -800);
+        }});
+
+        this.physics.add.overlap(this.player, this.items, (p, item) => {
+            if(item.texture.key === 'barril') location.reload();
+            else {
+                this.sillas++;
+                this.txtPedido.setText(`OBJETIVO: 🪑 ${this.sillas}/5`);
+                item.destroy();
+                if(this.sillas >= 5) { alert("¡PEDIDO LISTO!"); location.reload(); }
+            }
+        });
+
+        this.input.on('pointermove', (p) => { this.player.x = p.x; });
+    }
+}
 </script>
 </body>
 </html>
